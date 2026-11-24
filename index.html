@@ -1,0 +1,901 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Отпуск мечты: что оставим за бортом?</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏝️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Manrope:wght@400;600;700;800&family=Unbounded:wght@600;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+:root{
+  --sea:#0B3D66; --sea2:#0F5A8C; --lagoon:#1FA6B8; --sun:#FFC83D; --coral:#FF5E57;
+  --sky:#E4F5F8; --paper:#FFFFFF; --ink:#10263F; --muted:#5A6E85; --line:#CFE3EA;
+  --bg:var(--sky); --text:var(--ink); --panel:#FFFFFF;
+  --display:'Unbounded','Arial Black',system-ui,sans-serif;
+  --body:'Manrope',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --hand:'Caveat','Comic Sans MS',cursive;
+  color-scheme:light;
+  box-sizing:border-box;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#0A2236; --text:#EAF4F8; --muted:#9FB6C8; --line:#1F4560; --panel:#0F2E47; color-scheme:dark; }
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:var(--body);font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+h1,h2,h3{font-family:var(--display);line-height:1.1;margin:0}
+:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+
+/* ---------- buttons ---------- */
+.btn{border:0;border-radius:999px;padding:12px 22px;font-weight:800;cursor:pointer;background:var(--sea);color:#fff;transition:transform .12s,filter .12s}
+.btn:hover{filter:brightness(1.08)}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.4;cursor:not-allowed;filter:none;transform:none}
+.btn.sun{background:var(--sun);color:var(--ink)}
+.btn.coral{background:var(--coral);color:#fff}
+.btn.lagoon{background:var(--lagoon);color:#fff}
+.btn.ghost{background:transparent;color:inherit;box-shadow:inset 0 0 0 2px currentColor}
+.btn.sm{padding:7px 14px;font-size:14px}
+.btn.xs{padding:4px 10px;font-size:13px}
+
+/* ---------- postcard ---------- */
+.pc{position:relative;display:flex;flex-direction:column;gap:8px;background:var(--paper);color:var(--ink);border:0;border-radius:14px;padding:8px;text-align:left;
+  box-shadow:0 1px 0 rgba(16,38,63,.06),0 12px 24px -16px rgba(16,38,63,.55);transition:transform .15s,opacity .15s}
+button.pc{cursor:pointer}
+button.pc:hover{transform:translateY(-2px)}
+.pc .art{position:relative;aspect-ratio:4/3;border-radius:9px;display:grid;place-items:center;overflow:hidden;
+  background:linear-gradient(165deg,rgba(255,255,255,.45),rgba(255,255,255,0) 55%),var(--c)}
+.pc .art::before{content:"";position:absolute;left:-10%;right:-10%;bottom:-18%;height:45%;border-radius:50%;background:rgba(255,255,255,.22)}
+.pc .emo{position:relative;font-size:clamp(38px,6vw,56px);filter:drop-shadow(0 4px 6px rgba(0,0,0,.18))}
+.pc .stamp{position:absolute;top:8px;right:8px;width:30px;height:34px;display:grid;place-items:center;font-size:16px;background:#fff;border-radius:3px;outline:2px dashed rgba(255,255,255,.95);outline-offset:2px;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.pc .ttl{font-weight:700;font-size:15px;line-height:1.25;padding:0 4px 4px}
+.pc .pm{display:none;position:absolute;left:10px;top:10px;padding:2px 10px;border:3px solid var(--ink);border-radius:999px;font-family:var(--hand);font-size:22px;font-weight:700;
+  color:var(--ink);background:rgba(255,255,255,.88);transform:rotate(-9deg)}
+.pc.sel{box-shadow:0 0 0 4px var(--c),0 14px 26px -14px rgba(16,38,63,.6);transform:rotate(-1.2deg)}
+.pc.sel .pm{display:block;animation:stampIn .25s ease-out}
+.pc.off{opacity:.38}
+.pc.off:hover{transform:none}
+@keyframes stampIn{from{transform:rotate(-9deg) scale(1.6);opacity:0}to{transform:rotate(-9deg) scale(1);opacity:1}}
+
+/* ---------- participant ---------- */
+.play{max-width:1180px;margin:0 auto;padding:0 18px 120px}
+.hero{position:relative;padding:44px 0 22px;color:var(--text)}
+.hero h1{font-size:clamp(34px,7vw,74px);font-weight:800;letter-spacing:-.02em;color:var(--sea)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .hero h1{color:var(--sun)}}
+.hero .sub{font-family:var(--hand);font-size:clamp(24px,3.4vw,34px);color:var(--coral);margin:4px 0 14px;transform:rotate(-1.5deg);display:inline-block}
+.hero p{max-width:62ch;margin:8px 0;font-size:17px}
+.hero p.strong{font-weight:800}
+.timer{display:inline-block;margin-top:10px;font-family:var(--display);font-weight:600;font-size:20px;padding:6px 14px;border-radius:999px;background:var(--sea);color:#fff}
+.timer:empty{display:none}
+.timer.late{background:var(--coral)}
+.timer{font-variant-numeric:tabular-nums}
+.controls .timer{min-width:110px;text-align:center}
+.cats{position:sticky;top:0;z-index:5;display:flex;gap:8px;overflow-x:auto;padding:10px 0;background:var(--bg);scrollbar-width:none}
+.cats a{flex:none;display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:999px;background:var(--panel);color:var(--text);text-decoration:none;font-weight:700;font-size:14px;box-shadow:inset 0 0 0 2px var(--c)}
+.cat{scroll-margin-top:64px;margin-top:26px}
+.cat h2{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:600;margin-bottom:12px}
+.cat h2 .ic{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--c);font-size:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:10;display:flex;align-items:center;gap:14px;padding:12px max(18px,calc((100vw - 1180px)/2 + 18px));padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));
+  background:var(--sea);color:#fff;box-shadow:0 -10px 30px -12px rgba(0,0,0,.35)}
+.dock .count{font-family:var(--display);font-size:22px;white-space:nowrap}
+.dock .count b{color:var(--sun);font-size:30px}
+.dock .mini{flex:1;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.dock .mini button{flex:none;width:38px;height:38px;border-radius:10px;border:0;background:rgba(255,255,255,.14);font-size:20px;cursor:pointer}
+.dock .mini button:hover{background:var(--coral)}
+.msg{min-height:80vh;display:grid;place-items:center;text-align:center;padding:40px 20px}
+.msg .box{max-width:640px}
+.msg .big{font-size:76px;margin-bottom:12px}
+.msg h1{font-size:clamp(28px,5vw,46px);color:var(--sea);margin-bottom:14px}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .msg h1{color:var(--sun)}}
+.msg p{font-size:18px;color:var(--muted)}
+.join{display:flex;flex-direction:column;gap:12px;margin-top:24px}
+.join input{font:inherit;font-size:20px;padding:14px 18px;border-radius:14px;border:2px solid var(--line);background:var(--panel);color:var(--text);text-align:center}
+.join .err{color:var(--coral);font-weight:700;min-height:1.4em}
+.mygrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:24px;text-align:left}
+.mygrid .pc .ttl{font-size:13px}
+.mygrid .pc .emo{font-size:36px}
+
+/* discussion (participant) */
+.disc{max-width:900px;margin:0 auto;padding:24px 18px 60px}
+.counters{display:flex;gap:10px;flex-wrap:wrap}
+.counter{flex:1;min-width:120px;padding:12px 16px;border-radius:16px;background:var(--panel);box-shadow:inset 0 0 0 2px var(--line)}
+.counter b{display:block;font-family:var(--display);font-size:34px;line-height:1}
+.counter span{font-size:14px;color:var(--muted)}
+.counter.goal b{color:var(--coral)}
+.spot{margin:22px 0;padding:22px;border-radius:22px;background:var(--sea);color:#fff;text-align:center}
+.spot h2{font-size:20px;font-weight:600;margin-bottom:16px}
+.spot .cards{display:flex;flex-wrap:wrap;justify-content:center;gap:14px}
+.spot .pc{width:min(300px,100%)}
+.spot .pc.small{width:150px}
+.spot .pc.small .ttl{font-size:13px}
+.spot .hand{font-family:var(--hand);font-size:28px;color:var(--sun);margin-top:14px}
+.spot.idle{background:transparent;color:var(--muted);box-shadow:inset 0 0 0 2px dashed var(--line);border:2px dashed var(--line)}
+.hist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.hist li{display:flex;gap:10px;align-items:center;padding:8px 12px;border-radius:12px;background:var(--panel);font-size:15px}
+.hist .k{font-weight:800;min-width:96px}
+.hist .out .k{color:var(--coral)}
+.hist .keep .k{color:var(--lagoon)}
+.hist .back .k{color:#2E9E5B}
+.hist .out .t{text-decoration:line-through;text-decoration-color:var(--coral)}
+h3.sec{font-size:16px;font-weight:600;margin:26px 0 10px}
+.mine{display:flex;flex-wrap:wrap;gap:6px}
+.mine span{padding:6px 12px;border-radius:999px;background:var(--panel);font-size:14px;box-shadow:inset 0 0 0 2px var(--c)}
+.mine span.gone{opacity:.45;text-decoration:line-through}
+
+/* ---------- shared screen ---------- */
+.scr{min-height:100vh;color:#fff;background:
+  radial-gradient(circle at 88% -8%,rgba(255,200,61,.95) 0 90px,rgba(255,200,61,.25) 91px 150px,transparent 151px),
+  linear-gradient(180deg,#0F5A8C 0%,#0B3D66 55%,#082C4B 100%)}
+.scr .center{min-height:100vh;display:grid;place-items:center;text-align:center;padding:40px}
+.scr h1.giant{font-size:clamp(44px,7.5vw,120px);font-weight:800;letter-spacing:-.025em}
+.scr .hand{font-family:var(--hand);font-size:clamp(30px,3.6vw,52px);color:var(--sun);transform:rotate(-2deg);display:inline-block}
+.scr .lead{font-size:clamp(20px,2vw,28px);opacity:.9;max-width:44ch;margin:18px auto}
+.urlbox{display:inline-block;margin-top:22px;padding:14px 26px;border-radius:18px;background:#fff;color:var(--ink);font-family:var(--display);font-size:clamp(16px,1.8vw,26px);word-break:break-all}
+.tags{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:30px;max-width:1100px}
+.tag{position:relative;padding:8px 16px 8px 26px;background:var(--sun);color:var(--ink);font-weight:800;border-radius:6px 14px 14px 6px;font-size:18px}
+.tag::before{content:"";position:absolute;left:9px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:var(--sea)}
+.tag:nth-child(3n){background:#fff}.tag:nth-child(4n){background:#9EE6EE}
+.ring{font-family:var(--display);font-size:clamp(60px,9vw,150px);font-weight:800;line-height:1;margin-top:22px}
+.ring small{font-size:.35em;opacity:.75;font-weight:600}
+.scr .timer{font-size:32px;padding:8px 22px;margin-top:20px}
+.stage{min-height:100vh;display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:22px;padding:22px}
+.stage .left{display:flex;flex-direction:column;gap:14px;min-width:0}
+.stage .head{display:flex;align-items:center;gap:18px}
+.stage .head h1{font-size:30px;font-weight:800}
+.stage .counters .counter{background:rgba(255,255,255,.1);box-shadow:none;color:#fff}
+.stage .counters .counter span{color:rgba(255,255,255,.75)}
+.stage .counters .counter.goal b{color:var(--sun)}
+.board{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(var(--tw,150px),1fr));align-content:start}
+.tile{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:10px;background:#fff;color:var(--ink);border-left:6px solid var(--c);font-weight:700;font-size:var(--tf,13px);line-height:1.2;min-width:0}
+.tile .e{font-size:1.5em;flex:none}
+.tile .t{overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.tile.hot{outline:4px solid var(--coral);animation:pulse 1.2s ease-in-out infinite}
+.tile .kp{flex:none;margin-left:auto;font-size:1.1em}
+@keyframes pulse{50%{outline-color:var(--sun)}}
+.b-l{--tw:250px;--tf:18px}.b-m{--tw:200px;--tf:15px}.b-s{--tw:160px;--tf:13px}.b-xs{--tw:112px;--tf:11.5px}
+.b-xs{gap:6px}.b-xs .tile{padding:5px 7px;border-left-width:4px;gap:5px}
+.side{display:flex;flex-direction:column;gap:14px}
+.side .spot{margin:0;background:rgba(255,255,255,.1)}
+.side .spot.idle{border-color:rgba(255,255,255,.3);color:rgba(255,255,255,.7)}
+.side .spot .pc{width:100%}
+.side .spot .board{max-height:52vh;overflow:auto}
+.side .spot .pc .emo{font-size:96px}
+.side .spot .pc .ttl{font-size:24px}
+.side .spot .cards.many .pc{width:calc(50% - 7px)}
+.side .spot .cards.many .pc .emo{font-size:44px}
+.side .spot .cards.many .pc .ttl{font-size:14px}
+.side .spot .cards.many.lots .pc{width:calc(33.3% - 10px)}
+.side .spot .cards.many.lots .pc .ttl{font-size:12px}
+.overboard{background:rgba(0,0,0,.2);border-radius:18px;padding:14px}
+.overboard h3{font-size:16px;font-weight:600;margin-bottom:8px}
+.overboard .hist li{background:rgba(255,255,255,.08);color:#fff;font-size:14px;padding:6px 10px}
+.final{padding:40px 24px 60px;text-align:center}
+.final .postcards{display:flex;flex-wrap:wrap;justify-content:center;gap:22px;max-width:1500px;margin:34px auto 0}
+.final .pc{width:240px}
+.final .pc .emo{font-size:72px}
+.final .pc .ttl{font-size:17px}
+.final .pc:nth-child(odd){transform:rotate(-2.5deg)}
+.final .pc:nth-child(even){transform:rotate(2deg) translateY(12px)}
+.final .pc:nth-child(3n){transform:rotate(-1deg) translateY(-6px)}
+.final .vname{font-family:var(--hand);font-size:clamp(34px,4vw,60px);color:var(--sun);margin-top:6px}
+.final .note{margin:26px auto 0;max-width:52ch;font-size:20px;opacity:.9}
+.matches{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:34px auto 0;max-width:1100px}
+.matches span{padding:8px 16px;border-radius:999px;background:rgba(255,255,255,.12);font-weight:700}
+.matches b{color:var(--sun)}
+.play .final{color:var(--text)}
+.play .final .vname{color:var(--coral)}
+.play .final .pc{width:170px}
+.play .final .pc .emo{font-size:50px}
+.play .final .pc .ttl{font-size:14px}
+.score{display:inline-block;margin-top:24px;padding:14px 22px;border-radius:18px;background:var(--sun);color:var(--ink);font-weight:800;font-size:18px}
+
+/* flash overlay */
+#flash{position:fixed;inset:0;z-index:100;display:none;place-items:center;background:rgba(8,44,75,.72);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+#flash.on{display:grid;animation:fade .2s ease-out}
+#flash .in{position:relative;text-align:center;color:#fff;padding:20px}
+#flash .pc{width:min(320px,80vw);margin:0 auto}
+#flash .pc .emo{font-size:96px}
+#flash .pc .ttl{font-size:22px}
+#flash .emos{font-size:54px;letter-spacing:6px;max-width:700px}
+#flash .seal{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) rotate(-14deg);padding:6px 26px;border:6px solid var(--coral);border-radius:18px;color:var(--coral);background:rgba(255,255,255,.92);
+  font-family:var(--hand);font-weight:700;font-size:64px;white-space:nowrap;animation:seal .35s cubic-bezier(.2,1.6,.4,1) both .15s}
+#flash .seal.keep{border-color:var(--lagoon);color:var(--lagoon)}
+#flash .cap{font-family:var(--display);font-size:26px;margin-top:18px}
+@keyframes seal{from{transform:translate(-50%,-50%) rotate(-14deg) scale(2.4);opacity:0}to{transform:translate(-50%,-50%) rotate(-14deg) scale(1);opacity:1}}
+@keyframes fade{from{opacity:0}}
+
+/* ---------- host ---------- */
+.host{max-width:1400px;margin:0 auto;padding:18px}
+.h-head{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px}
+.h-head h1{font-size:28px;font-weight:800}
+.h-head .ph{margin-top:6px;color:var(--muted)}
+.h-head .ph b{color:var(--text)}
+.links{display:flex;flex-direction:column;gap:6px;font-size:14px}
+.links div{display:flex;gap:8px;align-items:center}
+.links code{background:var(--panel);padding:4px 8px;border-radius:8px;box-shadow:inset 0 0 0 1px var(--line);max-width:420px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.panel{background:var(--panel);border-radius:18px;padding:16px;box-shadow:inset 0 0 0 1px var(--line);margin-bottom:14px}
+.panel h2{font-size:17px;font-weight:600;margin-bottom:10px}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.controls .hint{color:var(--muted);font-size:14px;flex-basis:100%}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.steps span{padding:5px 12px;border-radius:999px;font-size:13px;font-weight:700;background:var(--bg);color:var(--muted)}
+.steps span.now{background:var(--sea);color:#fff}
+.steps span.past{color:var(--text)}
+.h-cols{display:grid;grid-template-columns:300px minmax(0,1fr);gap:14px;align-items:start}
+.people{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;max-height:420px;overflow:auto}
+.people li{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:8px;font-size:14px}
+.people li:nth-child(odd){background:var(--bg)}
+.people .st{margin-left:auto;font-size:13px;color:var(--muted)}
+.people .st.ok{color:#2E9E5B;font-weight:800}
+.people .x{border:0;background:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0 4px}
+.prog{height:10px;border-radius:99px;background:var(--bg);overflow:hidden;margin:6px 0 12px}
+.prog i{display:block;height:100%;background:var(--lagoon)}
+.cur{display:flex;flex-direction:column;gap:6px}
+.cur .row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:var(--bg)}
+.cur .row .nm{flex:1;font-weight:700}
+.cur .row .cnt{font-family:var(--display);font-size:14px;color:var(--muted);min-width:44px;text-align:right}
+.cur .all{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.tbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.seg{display:inline-flex;border-radius:999px;box-shadow:inset 0 0 0 2px var(--line);overflow:hidden}
+.seg button{border:0;background:none;padding:6px 12px;font-size:13px;font-weight:700;cursor:pointer;color:var(--muted)}
+.seg button.on{background:var(--sea);color:#fff}
+.twrap{overflow-x:auto}
+table.st{width:100%;border-collapse:collapse;font-size:14px}
+table.st th{text-align:left;font-size:12px;color:var(--muted);font-weight:700;padding:6px 8px;border-bottom:2px solid var(--line);position:sticky;top:0;background:var(--panel)}
+table.st td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.st tr.out td{opacity:.5}
+table.st tr.out td.nm{text-decoration:line-through}
+table.st tr.hot td{background:rgba(255,94,87,.1)}
+table.st .nm{min-width:240px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--c);margin-right:6px}
+.barc{display:flex;align-items:center;gap:8px;min-width:150px}
+.barc .b{flex:1;height:8px;border-radius:9px;background:var(--bg);overflow:hidden}
+.barc .b i{display:block;height:100%;background:var(--coral)}
+.barc b{font-family:var(--display);min-width:24px;text-align:right}
+.badge{font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.badge.in{background:var(--bg);color:var(--muted)}
+.badge.keep{background:rgba(31,166,184,.18);color:var(--lagoon)}
+.badge.out{background:rgba(255,94,87,.16);color:var(--coral)}
+.badge.hot{background:var(--coral);color:#fff}
+.gate{max-width:420px;margin:12vh auto;text-align:center;padding:20px}
+.gate h1{font-size:30px;margin-bottom:16px}
+.title-in{display:flex;gap:8px;flex-wrap:wrap}
+.title-in input{flex:1;min-width:200px;font:inherit;padding:10px 14px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--text)}
+.finlist{margin:10px 0 0;padding-left:22px}
+.finlist li{margin:4px 0}
+.ribbon{position:fixed;right:12px;bottom:12px;z-index:50;background:var(--coral);color:#fff;font-size:12px;font-weight:700;padding:6px 12px;border-radius:999px;box-shadow:0 6px 16px -6px rgba(0,0,0,.4);max-width:340px}
+.play .ribbon{bottom:88px}
+.ribbon.ok{background:#2E9E5B}
+.toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);z-index:120;background:var(--ink);color:#fff;padding:10px 18px;border-radius:12px;font-weight:700;box-shadow:0 10px 30px -10px rgba(0,0,0,.5)}
+
+@media (max-width: 980px){
+  .stage{grid-template-columns:1fr}
+  .h-cols{grid-template-columns:1fr}
+}
+@media (max-width: 560px){
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .pc .ttl{font-size:13px}
+  .dock .count{font-size:16px}.dock .count b{font-size:24px}
+  .dock .btn{padding:10px 14px}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="flash" aria-live="polite"></div>
+<script>
+/* =====================================================================
+   НАСТРОЙКИ — заполни перед игрой (см. README.md)
+   ===================================================================== */
+const CONFIG = {
+  // Вставь сюда конфиг своего проекта Firebase (Project settings → Your apps → Web app).
+  // Пока databaseURL пустой, игра работает в ТЕСТОВОМ режиме: только во вкладках одного браузера.
+  firebase: {
+    apiKey: "",
+    authDomain: "",
+    databaseURL: "",
+    projectId: "",
+    appId: ""
+  },
+  HOST_PIN: "otpusk2026",   // пароль для пульта ведущей — поменяй
+  ROOT: "otpusk",           // папка в базе; поменяй, если хочешь параллельную игру
+  CHOICE_MINUTES: 8,
+  PICKS: 10,
+  FINAL: 10
+};
+
+/* =====================================================================
+   ДАННЫЕ: категории и 100 впечатлений
+   ===================================================================== */
+const CATS = [
+  {id:'adv',     name:'Приключения и активный отдых',        icon:'🧗', c:'#FF8A3D'},
+  {id:'beauty',  name:'Красивые моменты',                    icon:'✨', c:'#9B7BF0'},
+  {id:'food',    name:'Еда и гастрономия',                   icon:'🍽️', c:'#F0566E'},
+  {id:'relax',   name:'Отдых и расслабление',                icon:'🌴', c:'#2DB7C6'},
+  {id:'fun',     name:'Развлечения и веселье',               icon:'🎉', c:'#F7C531'},
+  {id:'unusual', name:'Необычный опыт',                      icon:'🔮', c:'#4CB878'},
+  {id:'small',   name:'Маленькие радости и моменты вместе',  icon:'💛', c:'#F58DC0'},
+  {id:'dream',   name:'Мечты и особые впечатления',          icon:'🌠', c:'#5B8DEF'}
+];
+const RAW = [
+ ['adv','🎈','Полетать на воздушном шаре'],['adv','🤿','Попробовать дайвинг'],['adv','🐠','Поплавать с маской среди кораллов'],
+ ['adv','🥾','Отправиться в горный поход'],['adv','🐎','Прокатиться на лошадях'],['adv','🏄','Попробовать серфинг'],
+ ['adv','⛵','Отправиться на морскую прогулку на яхте'],['adv','🌋','Увидеть вулкан'],['adv','🏔️','Встретить рассвет на вершине горы'],
+ ['adv','🦒','Отправиться в сафари'],
+ ['beauty','🌅','Встретить рассвет на берегу моря'],['beauty','🌇','Увидеть невероятно красивый закат'],['beauty','🏕️','Провести ночь под открытым небом'],
+ ['beauty','🌌','Увидеть северное сияние'],['beauty','💦','Искупаться в водопаде'],['beauty','🧺','Устроить пикник в живописном месте'],
+ ['beauty','♨️','Встретить рассвет в горячем источнике'],['beauty','🏝️','Провести день на необитаемом острове'],['beauty','✨','Увидеть звёздное небо вдали от города'],
+ ['beauty','🚞','Прокатиться на панорамном поезде'],['beauty','🐋','Увидеть китов в открытом море'],['beauty','🌺','Побывать в красивейшем ботаническом саду'],
+ ['beauty','🏞️','Искупаться в природном озере'],['beauty','🌆','Встретить закат на крыше с красивым видом'],['beauty','📸','Устроить фотосессию на память'],
+ ['food','🥘','Попробовать блюда местной кухни'],['food','🍷','Устроить ужин в ресторане с видом'],['food','🍹','Попробовать необычные местные напитки'],
+ ['food','👩‍🍳','Научиться готовить местное блюдо'],['food','🧀','Сходить на гастрономический рынок'],['food','🥐','Устроить огромный завтрак с видом'],
+ ['food','🌮','Попробовать уличную еду'],['food','🦞','Устроить ужин на пляже'],['food','🍜','Попробовать блюда, названия которых раньше никогда не слышали'],
+ ['food','🍝','Устроить кулинарный вечер всей компанией'],
+ ['relax','🏊','Провести целый день у бассейна'],['relax','🧖','Устроить спа-день'],['relax','☁️','Провести день без единого плана'],
+ ['relax','😴','Просыпаться без будильника всю неделю'],['relax','📖','Провести день на пляже с книгой'],['relax','💆','Сходить на массаж'],
+ ['relax','🔥','Провести вечер у камина'],['relax','🏨','Устроить ленивый день в красивом отеле'],['relax','🎧','Провести день в гамаке с любимой музыкой'],
+ ['relax','📵','Устроить цифровой детокс на один день'],['relax','🛁','Провести вечер в джакузи'],['relax','🧖‍♂️','Сходить в баню или сауну'],
+ ['relax','🏡','Провести день в красивом загородном доме'],['relax','🍳','Устроить долгий завтрак, который плавно перетекает в обед'],['relax','💬','Провести вечер за разговорами без спешки'],
+ ['fun','🎉','Устроить вечеринку на пляже'],['fun','🎤','Сходить на концерт любимого исполнителя'],['fun','🎙️','Провести вечер в караоке'],
+ ['fun','🎭','Устроить тематическую вечеринку'],['fun','💃','Танцевать до самого утра'],['fun','🎢','Посетить парк аттракционов'],
+ ['fun','🎲','Устроить вечер настольных игр'],['fun','🎪','Сходить на необычное шоу'],['fun','🎸','Посетить большой музыкальный фестиваль'],
+ ['fun','🎬','Устроить кинотеатр под открытым небом'],['fun','🌃','Отправиться на ночную прогулку по городу'],['fun','🎡','Покататься на колесе обозрения'],
+ ['fun','🩱','Устроить вечеринку у бассейна'],['fun','🏮','Сходить на местный праздник или фестиваль'],['fun','🎷','Устроить вечер живой музыки'],
+ ['unusual','🌳','Переночевать в домике на дереве'],['unusual','🛶','Пожить в доме на воде'],['unusual','🔭','Провести ночь в стеклянном доме с видом на звёзды'],
+ ['unusual','🚂','Прокатиться на старинном поезде'],['unusual','🏺','Попробовать себя в гончарном деле'],['unusual','🎨','Сходить на мастер-класс по живописи'],
+ ['unusual','🐄','Провести день на ферме'],['unusual','🧶','Посетить местную мастерскую ремесленников'],['unusual','🗺️','Устроить спонтанную поездку без заранее выбранного маршрута'],
+ ['unusual','🏰','Провести день в тематическом парке'],
+ ['small','🎁','Купить сувенир, который будет напоминать об отпуске'],['small','📜','Устроить вечер воспоминаний и историй'],['small','👯','Провести целый день в компании друзей'],
+ ['small','🍉','Устроить совместный пикник'],['small','☕','Найти маленькое кафе, о котором знают только местные'],['small','🎀','Устроить день сюрпризов'],
+ ['small','💌','Написать открытки близким'],['small','🕯️','Устроить красивый ужин при свечах'],['small','🏘️','Провести день, исследуя маленькие улочки'],
+ ['small','🥞','Устроить большой совместный завтрак'],
+ ['dream','🏜️','Увидеть настоящую пустыню'],['dream','🐕','Прокатиться на собачьей упряжке'],['dream','🛳️','Отправиться в круиз'],
+ ['dream','🌸','Увидеть цветение сакуры'],['dream','🎊','Попасть на большой карнавал'],['dream','🎆','Встретить Новый год в необычном месте'],
+ ['dream','🏟️','Побывать на большом спортивном событии'],['dream','🖼️','Посетить знаменитый музей'],['dream','🌄','Устроить вечер на красивой террасе с видом'],
+ ['dream','🐚','Провести несколько дней в маленьком приморском городке'],['dream','👒','Побывать на винтажном рынке'],['dream','🛍️','Устроить день шопинга'],
+ ['dream','📽️','Провести вечер в открытом кинотеатре'],['dream','🖌️','Попробовать необычный творческий мастер-класс'],['dream','🐢','Провести целый день, никуда не торопясь']
+];
+const ITEMS = RAW.map((r,i)=>({id:'i'+(i+1), n:i+1, cat:r[0], e:r[1], t:r[2]}));
+const BY = Object.fromEntries(ITEMS.map(x=>[x.id,x]));
+const CAT = Object.fromEntries(CATS.map(c=>[c.id,c]));
+
+/* =====================================================================
+   УТИЛИТЫ
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+const app = $('#app');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rid = () => Math.random().toString(36).slice(2,10) + Date.now().toString(36);
+const arr = v => Array.isArray(v) ? v.filter(Boolean) : (v && typeof v === 'object' ? Object.values(v) : []);
+const plural = (n,a,b,c) => { const m=Math.abs(n)%100, m1=m%10; if(m>10&&m<20) return c; if(m1>1&&m1<5) return b; if(m1===1) return a; return c; };
+const keyOf = name => 'p_' + name.toLowerCase().replace(/[.#$\[\]\/\s]+/g,'_');
+function toast(t){ const d=document.createElement('div'); d.className='toast'; d.textContent=t; document.body.appendChild(d); setTimeout(()=>d.remove(),2600); }
+
+/* =====================================================================
+   ХРАНИЛИЩЕ: Firebase Realtime Database или тестовый режим (localStorage)
+   ===================================================================== */
+const INC = {__inc:1};
+let CONN = null;
+function setConn(v){ CONN=v; renderRibbon(); }
+function makeBackend(){
+  const fb = CONFIG.firebase;
+  if (fb.databaseURL && window.firebase){
+    firebase.initializeApp(fb);
+    const db = firebase.database();
+    const root = db.ref(CONFIG.ROOT);
+    const conv = v => v === INC ? firebase.database.ServerValue.increment(1) : (v === undefined ? null : v);
+    return {
+      mode:'firebase',
+      listen(cb){
+        root.on('value', s => cb(s.val() || {}), err => { console.error(err); toast('Нет доступа к базе: проверь правила Firebase'); });
+        db.ref('.info/connected').on('value', s => setConn(!!s.val()));
+      },
+      update(map){ const o={}; for(const k in map) o[k]=conv(map[k]); return root.update(o); },
+      set(path,v){ return root.child(path).set(conv(v)); },
+      pushKey(){ return root.push().key; },
+      reset(v){ return root.set(v); }
+    };
+  }
+  const K = 'otpusk-local-' + CONFIG.ROOT;
+  let cb = () => {};
+  const get = () => { try { return JSON.parse(localStorage.getItem(K)) || {}; } catch(e){ return {}; } };
+  const save = s => { localStorage.setItem(K, JSON.stringify(s)); cb(get()); };
+  function setIn(o,path,v){
+    const ps = path.split('/'); let cur = o;
+    for (let i=0;i<ps.length-1;i++){ if(typeof cur[ps[i]]!=='object'||cur[ps[i]]===null) cur[ps[i]]={}; cur=cur[ps[i]]; }
+    const last = ps[ps.length-1];
+    if (v===null || v===undefined) delete cur[last];
+    else if (v===INC) cur[last] = (cur[last]||0) + 1;
+    else cur[last] = JSON.parse(JSON.stringify(v));
+  }
+  window.addEventListener('storage', e => { if (e.key === K) cb(get()); });
+  setTimeout(() => setConn(true));
+  return {
+    mode:'local',
+    listen(f){ cb=f; f(get()); },
+    update(map){ const s=get(); for(const k in map) setIn(s,k,map[k]); save(s); return Promise.resolve(); },
+    set(p,v){ return this.update({[p]:v}); },
+    pushKey(){ return 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); },
+    reset(v){ save(v||{}); return Promise.resolve(); }
+  };
+}
+const B = makeBackend();
+let S = {};
+
+function derive(){
+  const g = S.game || {}, out = S.out || {}, kept = S.kept || {}, tally = S.tally || {};
+  const remaining = ITEMS.filter(x => !out[x.id]);
+  const outList = ITEMS.filter(x => out[x.id]).sort((a,b) => out[b.id]-out[a.id]);
+  const players = Object.entries(S.players || {}).map(([k,p]) => ({key:k, ...p})).sort((a,b)=>(a.t||0)-(b.t||0));
+  const log = Object.values(S.log || {}).filter(x=>x&&BY[x.id]).sort((a,b) => b.t-a.t);
+  const current = arr(g.current).filter(id => BY[id] && !out[id]);
+  return {g, out, kept, tally, remaining, outList, players, log, current, done: players.filter(p=>p.done).length};
+}
+
+/* =====================================================================
+   ОБЩИЕ КУСОЧКИ ИНТЕРФЕЙСА
+   ===================================================================== */
+function cardHTML(it, {tag='div', cls='', extra=''} = {}){
+  const c = CAT[it.cat];
+  return `<${tag} ${tag==='button'?'type="button"':''} class="pc ${cls}" data-id="${it.id}" style="--c:${c.c}">
+    <span class="art"><span class="emo">${it.e}</span><span class="stamp" title="${esc(c.name)}">${c.icon}</span></span>
+    <span class="ttl">${esc(it.t)}</span><span class="pm">в отпуск!</span>${extra}</${tag}>`;
+}
+function histHTML(log, n){
+  const lab = {out:'За бортом', keep:'Отстояли', back:'Вернули'};
+  if (!log.length) return `<p style="opacity:.7;margin:0">Решений пока нет.</p>`;
+  return `<ul class="hist">${log.slice(0,n).map(l => `<li class="${l.a}"><span class="k">${lab[l.a]||''}</span><span>${BY[l.id].e}</span><span class="t">${esc(BY[l.id].t)}</span></li>`).join('')}</ul>`;
+}
+function countersHTML(D){
+  return `<div class="counters">
+    <div class="counter"><b>${D.remaining.length}</b><span>осталось в списке</span></div>
+    <div class="counter"><b>${D.outList.length}</b><span>за бортом</span></div>
+    <div class="counter goal"><b>${CONFIG.FINAL}</b><span>наша цель</span></div></div>`;
+}
+function renderRibbon(){
+  let r = $('#ribbon');
+  if (!r){ r=document.createElement('div'); r.id='ribbon'; r.className='ribbon'; document.body.appendChild(r); }
+  r.parentNode !== document.body && document.body.appendChild(r);
+  if (B.mode === 'local'){ r.className='ribbon'; r.textContent='Тестовый режим без Firebase: синхронизация только между вкладками этого браузера'; r.style.display=''; }
+  else if (CONN === false){ r.className='ribbon'; r.textContent='Нет связи с сервером, переподключаемся…'; r.style.display=''; }
+  else r.style.display='none';
+  if (VIEW==="play") r.style.bottom = "88px";
+}
+
+/* flash: штамп при исключении/сохранении карточки */
+let prevOut=null, prevKept=null, flashT=null;
+function detectFlash(){
+  const out = S.out||{}, kept = S.kept||{};
+  if (prevOut && VIEW!=='host' && S.game && S.game.phase==='discussion'){
+    const nOut = Object.keys(out).filter(k=>!prevOut[k] && BY[k]);
+    const nKeep = Object.keys(kept).filter(k=>!prevKept[k] && BY[k]);
+    if (nOut.length) flash(nOut,'out'); else if (nKeep.length) flash(nKeep,'keep');
+  }
+  prevOut = {...out}; prevKept = {...kept};
+}
+function flash(ids, kind){
+  const f = $('#flash');
+  const word = kind==='out' ? 'за бортом' : 'остаётся!';
+  let inner;
+  if (ids.length===1) inner = cardHTML(BY[ids[0]]);
+  else inner = `<div class="emos">${ids.slice(0,14).map(id=>BY[id].e).join('')}</div>
+    <div class="cap">${kind==='out' ? 'За борт отправились' : 'Остаются в списке'}: ${ids.length} ${plural(ids.length,'впечатление','впечатления','впечатлений')}</div>`;
+  f.innerHTML = `<div class="in">${inner}<div class="seal ${kind==='keep'?'keep':''}">${word}</div></div>`;
+  f.classList.add('on');
+  clearTimeout(flashT); flashT = setTimeout(()=>f.classList.remove('on'), ids.length===1 ? 1900 : 2600);
+}
+$('#flash').addEventListener('click', ()=>$('#flash').classList.remove('on'));
+
+/* таймер */
+setInterval(()=>{
+  const e = S.game && S.game.phase==='choosing' && S.game.endsAt;
+  document.querySelectorAll('[data-timer]').forEach(el=>{
+    if (!e){ el.textContent=''; return; }
+    const s = Math.max(0, Math.round((e-Date.now())/1000));
+    el.textContent = s>0 ? `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}` : 'Время вышло — завершаем';
+    el.classList.toggle('late', s<=60);
+  });
+}, 500);
+
+/* =====================================================================
+   УЧАСТНИК
+   ===================================================================== */
+const ME_KEY = 'otpusk-me-' + CONFIG.ROOT;
+// В тестовом режиме каждая вкладка — отдельный участник (sessionStorage), с Firebase — память браузера (localStorage)
+const MS = B.mode === 'local' ? sessionStorage : localStorage;
+let ME = (()=>{ try { return JSON.parse(MS.getItem(ME_KEY)); } catch(e){ return null; } })();
+const saveMe = () => ME ? MS.setItem(ME_KEY, JSON.stringify(ME)) : MS.removeItem(ME_KEY);
+let lastStage = '';
+
+function renderPlay(force){
+  const D = derive(), g = D.g;
+  if (ME && g.round && ME.round !== g.round){ ME = null; saveMe(); }
+  const pl = ME && S.players && S.players[ME.key];
+  if (ME && pl && pl.done && !ME.done){ ME.done = true; saveMe(); }
+  let stage;
+  if (!g.phase) stage = 'closed';
+  else if (!ME) stage = 'join';
+  else if (g.phase === 'lobby') stage = 'lobby';
+  else if (g.phase === 'choosing') stage = ME.done ? 'saved' : 'choose';
+  else stage = g.phase;
+
+  const changed = stage !== lastStage || force; lastStage = stage;
+  if (stage === 'choose'){ if (changed) buildChoose(); updateChoose(); return; }
+  if (stage === 'join'){ if (changed || !$('#joinForm')) buildJoin(); return; }
+
+  if (stage === 'closed') app.innerHTML = msgHTML('🏝️','Игра ещё не открыта','Ведущая скоро её запустит. Страница обновится сама.');
+  else if (stage === 'lobby') app.innerHTML = msgHTML('🧳', `${esc(ME.name)}, ты в игре!`, `Чемодан собран. Ждём, когда ведущая откроет выбор. В игре уже ${D.players.length} ${plural(D.players.length,'человек','человека','человек')}.`);
+  else if (stage === 'saved') app.innerHTML = msgHTML('📮','Твой список сохранён','Теперь посмотрим, каким получится наш общий отпуск.', mineCards());
+  else if (stage === 'reveal') app.innerHTML = msgHTML('🌊','Все готовы','Начинаем собирать наш отпуск. Следи за общим экраном в Google Meet.');
+  else if (stage === 'discussion') app.innerHTML = `<div class="play">${playDiscussion(D)}</div>`;
+  else if (stage === 'final') app.innerHTML = `<div class="play">${playFinal(D)}</div>`;
+}
+function msgHTML(icon, title, text, extra=''){
+  return `<div class="msg"><div class="box"><div class="big">${icon}</div><h1>${title}</h1><p>${text}</p>${extra}</div></div>`;
+}
+function mineCards(){
+  if (!ME || !ME.picks || !ME.picks.length) return '';
+  return `<div class="mygrid">${ME.picks.map(id=>cardHTML(BY[id])).join('')}</div>`;
+}
+function buildJoin(){
+  app.innerHTML = msgHTML('🏝️','Отпуск мечты','Что оставим за бортом? Представься, чтобы войти в игру.',
+    `<form class="join" id="joinForm" autocomplete="off">
+      <input id="nm" maxlength="30" placeholder="Имя или псевдоним" aria-label="Имя или псевдоним" autofocus>
+      <button class="btn sun" type="submit">Войти в игру</button>
+      <div class="err" id="jerr" role="alert"></div></form>`);
+  $('#joinForm').addEventListener('submit', e => { e.preventDefault(); doJoin($('#nm').value); });
+}
+async function doJoin(raw){
+  const name = raw.trim().replace(/\s+/g,' ').slice(0,30);
+  const err = t => { $('#jerr').textContent = t; };
+  if (name.length < 2) return err('Введи имя — хотя бы две буквы.');
+  if (!S.game || !S.game.round) return err('Игра ещё не открыта.');
+  const key = keyOf(name), ex = S.players && S.players[key];
+  const token = (ME && ME.token) || MS.getItem('otpusk-token') || rid();
+  MS.setItem('otpusk-token', token);
+  if (ex && ex.token !== token) return err('Такое имя уже в игре. Добавь первую букву фамилии или эмодзи.');
+  ME = {key, name, token, round:S.game.round, picks:[], done: !!(ex && ex.done)};
+  saveMe();
+  await B.set('players/'+key, ex ? {...ex, name} : {name, token, done:false, t:Date.now()});
+  renderPlay(true);
+}
+function buildChoose(){
+  const sections = CATS.map(c => `<section class="cat" id="cat-${c.id}" style="--c:${c.c}">
+      <h2><span class="ic">${c.icon}</span>${esc(c.name)}</h2>
+      <div class="grid">${ITEMS.filter(x=>x.cat===c.id).map(x=>cardHTML(x,{tag:'button'})).join('')}</div></section>`).join('');
+  app.innerHTML = `<div class="play">
+    <header class="hero">
+      <h1>Отпуск мечты</h1>
+      <span class="sub">30 дней, любые впечатления</span>
+      <p>Представь, что у нас есть возможность отправиться в отпуск на 30 дней. Мы можем выбрать любые впечатления, развлечения и занятия. Но у каждого своё представление об идеальном отдыхе.</p>
+      <p class="strong">Выбери 10 впечатлений, без которых твой отпуск не будет идеальным. Никто не увидит твой список.</p>
+      <div class="timer" data-timer></div>
+    </header>
+    <nav class="cats" aria-label="Категории">${CATS.map(c=>`<a href="#cat-${c.id}" style="--c:${c.c}" data-jump="cat-${c.id}">${c.icon} ${esc(c.name)}</a>`).join('')}</nav>
+    ${sections}
+    <div class="dock">
+      <div class="count"><b id="cnt">0</b> из ${CONFIG.PICKS}</div>
+      <div class="mini" id="mini" aria-label="Выбранные впечатления"></div>
+      <button class="btn sun" id="finish" disabled>Завершить выбор</button>
+    </div></div>`;
+  app.querySelectorAll('[data-jump]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); document.getElementById(a.dataset.jump).scrollIntoView({behavior:'smooth'}); }));
+  app.querySelectorAll('button.pc').forEach(b => b.addEventListener('click', () => togglePick(b.dataset.id)));
+  let armed = false, armT;
+  $('#finish').addEventListener('click', () => {
+    if (!armed){ armed = true; $('#finish').textContent = 'Точно? Нажми ещё раз'; $('#finish').classList.replace('sun','coral');
+      armT = setTimeout(()=>{ armed=false; const f=$('#finish'); if(f){ f.textContent='Завершить выбор'; f.classList.replace('coral','sun'); } }, 3500); return; }
+    clearTimeout(armT); finishPicks();
+  });
+}
+function togglePick(id){
+  if (!ME || ME.done) return;
+  const i = ME.picks.indexOf(id);
+  if (i >= 0) ME.picks.splice(i,1);
+  else if (ME.picks.length < CONFIG.PICKS) ME.picks.push(id);
+  else { toast('Уже выбрано 10. Сними одну карточку, чтобы добавить другую.'); return; }
+  saveMe(); updateChoose();
+}
+function updateChoose(){
+  const full = ME.picks.length >= CONFIG.PICKS;
+  app.querySelectorAll('button.pc').forEach(b => {
+    const on = ME.picks.includes(b.dataset.id);
+    b.classList.toggle('sel', on); b.classList.toggle('off', full && !on);
+    b.setAttribute('aria-pressed', on);
+  });
+  $('#cnt').textContent = ME.picks.length;
+  $('#mini').innerHTML = ME.picks.map(id => `<button type="button" data-un="${id}" title="Убрать: ${esc(BY[id].t)}">${BY[id].e}</button>`).join('');
+  $('#mini').querySelectorAll('[data-un]').forEach(b => b.addEventListener('click', () => togglePick(b.dataset.un)));
+  const f = $('#finish'); if (f && !f.classList.contains('coral')) f.disabled = ME.picks.length !== CONFIG.PICKS;
+}
+async function finishPicks(){
+  const f = $('#finish'); if (f) f.disabled = true;
+  if (ME.picks.length !== CONFIG.PICKS) return;
+  const pl = S.players && S.players[ME.key];
+  if (pl && pl.done){ ME.done = true; saveMe(); renderPlay(true); return; }
+  if (!S.game || S.game.phase !== 'choosing'){ toast('Выбор уже закрыт ведущей'); return; }
+  const upd = {};
+  ME.picks.forEach(id => upd['tally/'+id] = INC);
+  upd['players/'+ME.key+'/done'] = true;
+  try { await B.update(upd); ME.done = true; saveMe(); renderPlay(true); }
+  catch(e){ console.error(e); toast('Не получилось сохранить. Проверь интернет и нажми ещё раз.'); if (f) f.disabled = false; }
+}
+function spotHTML(D, big){
+  if (!D.current.length) return `<div class="spot idle"><h2>Ведущая выбирает следующую карточку…</h2></div>`;
+  const n = D.current.length;
+  const many = n > 1;
+  const cls = many ? (big ? `many ${n>4?'lots':''}` : '') : '';
+  return `<div class="spot"><h2>${many ? `Предлагаем исключить ${n} ${plural(n,'впечатление','впечатления','впечатлений')}` : 'Предлагаем исключить'}</h2>
+    ${n > 6
+      ? `<div class="board b-xs" style="text-align:left">${D.current.map(id => `<div class="tile" style="--c:${CAT[BY[id].cat].c}"><span class="e">${BY[id].e}</span><span class="t">${esc(BY[id].t)}</span></div>`).join('')}</div>`
+      : `<div class="cards ${cls}">${D.current.map(id => cardHTML(BY[id], {cls: (many && !big) ? 'small' : ''})).join('')}</div>`}
+    <div class="hand">Не согласен? Подними руку в Google Meet ✋</div></div>`;
+}
+function playDiscussion(D){
+  let mine = '';
+  if (ME && ME.done && ME.picks.length){
+    mine = `<h3 class="sec">Твои 10 — что с ними сейчас</h3><div class="mine">${ME.picks.map(id => `<span style="--c:${CAT[BY[id].cat].c}" class="${D.out[id]?'gone':''}">${BY[id].e} ${esc(BY[id].t)}</span>`).join('')}</div>`;
+  }
+  return `<div class="disc">${countersHTML(D)}${spotHTML(D,false)}
+    <h3 class="sec">История решений</h3>${histHTML(D.log, 8)}${mine}</div>`;
+}
+function playFinal(D){
+  let score = '';
+  if (ME && ME.done && ME.picks.length){
+    const n = ME.picks.filter(id => !D.out[id]).length;
+    if (!S.matches || S.matches[ME.key] !== n) B.set('matches/'+ME.key, n);
+    score = `<div class="score">Из твоих 10 в общий отпуск попали: ${n}</div>`;
+  }
+  return `<div class="final"><h1 class="giant" style="font-size:clamp(32px,6vw,60px)">Наш отпуск мечты</h1>
+    ${D.g.title ? `<div class="vname">«${esc(D.g.title)}»</div>` : ''}
+    ${score}
+    <div class="postcards">${D.remaining.map(x=>cardHTML(x)).join('')}</div></div>`;
+}
+
+/* =====================================================================
+   ОБЩИЙ ЭКРАН (демонстрация в Google Meet)
+   ===================================================================== */
+function renderScreen(){
+  const D = derive(), g = D.g;
+  const base = location.href.split('#')[0];
+  let h;
+  if (!g.phase) h = `<div class="center"><div><h1 class="giant">Отпуск мечты</h1><p class="lead">Ведущая ещё не открыла игру.</p></div></div>`;
+  else if (g.phase === 'lobby') h = `<div class="center"><div>
+      <div class="hand">что оставим за бортом?</div>
+      <h1 class="giant">Отпуск мечты</h1>
+      <p class="lead">Открой ссылку на своём компьютере и впиши имя:</p>
+      <div class="urlbox">${esc(base)}</div>
+      <div class="tags">${D.players.map(p=>`<span class="tag">${esc(p.name)}</span>`).join('')}</div>
+    </div></div>`;
+  else if (g.phase === 'choosing') h = `<div class="center"><div>
+      <h1 class="giant">Выбираем тайно</h1>
+      <p class="lead">Каждый выбирает 10 впечатлений, без которых его отпуск не будет идеальным. Никаких обсуждений — пока.</p>
+      <div class="timer" data-timer></div>
+      <div class="ring">${D.done}<small> из ${D.players.length} готовы</small></div>
+    </div></div>`;
+  else if (g.phase === 'reveal') h = `<div class="center"><div>
+      <div class="hand">чемоданы собраны</div>
+      <h1 class="giant">Все готовы</h1>
+      <p class="lead">Начинаем собирать наш отпуск.</p></div></div>`;
+  else if (g.phase === 'discussion'){
+    const n = D.remaining.length;
+    const size = n > 60 ? 'b-xs' : n > 36 ? 'b-s' : n > 18 ? 'b-m' : 'b-l';
+    h = `<div class="stage"><div class="left">
+        <div class="head"><h1>Что оставим за бортом?</h1></div>
+        ${countersHTML(D)}
+        <div class="board ${size}">${D.remaining.map(x => `<div class="tile ${D.current.includes(x.id)?'hot':''}" style="--c:${CAT[x.cat].c}"><span class="e">${x.e}</span><span class="t">${esc(x.t)}</span>${D.kept[x.id]?'<span class="kp" title="Отстояли">⚓</span>':''}</div>`).join('')}</div>
+      </div>
+      <aside class="side">${spotHTML(D,true)}
+        <div class="overboard"><h3>История решений</h3>${histHTML(D.log, 7)}</div></aside></div>`;
+  }
+  else if (g.phase === 'final'){
+    const ms = Object.entries(S.matches||{}).map(([k,n])=>({name:(S.players&&S.players[k]&&S.players[k].name)||'', n})).filter(x=>x.name).sort((a,b)=>b.n-a.n);
+    h = `<div class="final">
+      <h1 class="giant">Наш отпуск мечты</h1>
+      <div class="vname">${g.title ? '«'+esc(g.title)+'»' : 'название придумаем вместе'}</div>
+      <div class="postcards">${D.remaining.map(x=>cardHTML(x)).join('')}</div>
+      ${g.showMatches && ms.length ? `<p class="note">Сколько личных желаний попало в общий отпуск:</p><div class="matches">${ms.map(m=>`<span>${esc(m.name)}: <b>${m.n}</b> из ${CONFIG.PICKS}</span>`).join('')}</div>` : ''}
+      <p class="note">Каждый из нас представлял идеальный отпуск по-своему. Но в итоге мы создали один общий.</p></div>`;
+  }
+  app.innerHTML = `<div class="scr">${h}</div>`;
+}
+
+/* =====================================================================
+   ПУЛЬТ ВЕДУЩЕЙ
+   ===================================================================== */
+const HF = {filter:'in', sort:'asc'};
+const SEL = new Set();
+let hostBuilt = false;
+const PHASES = [['lobby','Вход'],['choosing','Личный выбор'],['reveal','Статистика'],['discussion','Обсуждение'],['final','Финал']];
+
+function renderHost(){
+  if (sessionStorage.getItem('otpusk-host') !== '1'){
+    app.innerHTML = `<div class="gate"><h1>Пульт ведущей</h1>
+      <form class="join" id="pinForm"><input id="pin" type="password" placeholder="Пароль ведущей" aria-label="Пароль ведущей" autofocus>
+      <button class="btn" type="submit">Войти</button><div class="err" id="perr" role="alert"></div></form></div>`;
+    $('#pinForm').addEventListener('submit', e => { e.preventDefault();
+      if ($('#pin').value === CONFIG.HOST_PIN){ sessionStorage.setItem('otpusk-host','1'); hostBuilt=false; renderHost(); }
+      else $('#perr').textContent = 'Пароль не подходит.'; });
+    return;
+  }
+  if (!hostBuilt){
+    const base = location.href.split('#')[0];
+    app.innerHTML = `<div class="host">
+      <header class="h-head"><div><h1>Пульт ведущей</h1><div class="ph" id="h-phase"></div></div>
+        <div class="links">
+          <div>Участникам: <code>${esc(base)}</code><button class="btn xs ghost" data-copy="${esc(base)}">Копировать</button></div>
+          <div>Общий экран (показывай его в Meet): <code>${esc(base)}#screen</code><button class="btn xs ghost" data-copy="${esc(base)}#screen">Копировать</button><a class="btn xs lagoon" href="${esc(base)}#screen" target="_blank" rel="noopener" style="text-decoration:none">Открыть</a></div>
+        </div></header>
+      <section class="panel" id="h-controls"></section>
+      <div class="h-cols">
+        <aside><section class="panel" id="h-people"></section><section class="panel" id="h-history"></section></aside>
+        <main><section class="panel" id="h-current"></section>
+          <section class="panel" id="h-final"><h2>Название отпуска</h2>
+            <div class="title-in"><input id="ttl" maxlength="60" placeholder="Например: «Море, сауна и ни одного будильника»"><button class="btn sm" id="ttlSave">Сохранить</button></div>
+            <div id="h-final-body"></div></section>
+          <section class="panel" id="h-table"></section></main>
+      </div></div>`;
+    app.addEventListener('click', hostClick);
+    app.addEventListener('change', e => { const id = e.target.dataset && e.target.dataset.sel; if (id){ e.target.checked ? SEL.add(id) : SEL.delete(id); renderHost(); } });
+    $('#ttlSave').addEventListener('click', () => { B.set('game/title', $('#ttl').value.trim() || null); toast('Название сохранено'); });
+    hostBuilt = true;
+  }
+  const D = derive(), g = D.g;
+  const ttl = $('#ttl'); if (document.activeElement !== ttl) ttl.value = g.title || '';
+
+  // фаза + управление
+  const pi = PHASES.findIndex(p=>p[0]===g.phase);
+  $('#h-phase').innerHTML = g.phase ? `Сейчас: <b>${PHASES[pi][1]}</b>` : 'Игра ещё не создана';
+  let ctr = `<div class="steps">${PHASES.map((p,i)=>`<span class="${i===pi?'now':i<pi?'past':''}">${i+1}. ${p[1]}</span>`).join('')}</div><div class="controls">`;
+  if (!g.phase) ctr += `<button class="btn sun" data-act="reset">Создать игру</button><span class="hint">После создания участники смогут войти по ссылке.</span>`;
+  else if (g.phase==='lobby') ctr += `<button class="btn sun" data-act="phase" data-p="choosing">Начать личный выбор (${CONFIG.CHOICE_MINUTES} мин)</button><span class="hint">Участники входят по ссылке. Подождите, пока подключится большинство.</span>`;
+  else if (g.phase==='choosing') ctr += `<span class="timer" data-timer style="margin:0"></span><button class="btn sun" data-act="phase" data-p="reveal">Закрыть выбор и открыть статистику</button>
+      <span class="hint">Готовы ${D.done} из ${D.players.length}. Кто не нажал «Завершить», не попадёт в статистику.</span>`;
+  else if (g.phase==='reveal') ctr += `<button class="btn sun" data-act="phase" data-p="discussion">Начать обсуждение</button><span class="hint">Участники видят только заставку. Статистика — ниже, только у тебя.</span>`;
+  else if (g.phase==='discussion') ctr += (D.remaining.length <= CONFIG.FINAL
+      ? `<button class="btn sun" data-act="phase" data-p="final">Осталось ${D.remaining.length} — открыть финал</button>`
+      : `<button class="btn ghost sm" data-act="phase" data-p="final">Открыть финал досрочно</button><span class="hint">Осталось ${D.remaining.length}, до цели исключить ещё ${D.remaining.length-CONFIG.FINAL}.</span>`);
+  else if (g.phase==='final') ctr += `<button class="btn sm lagoon" data-act="matches">${g.showMatches?'Скрыть совпадения':'Показать совпадения на экране'}</button>
+      <button class="btn sm" data-act="download">Скачать итоговый список</button><button class="btn sm ghost" data-act="phase" data-p="discussion">Вернуться к обсуждению</button>`;
+  if (g.phase) ctr += `<button class="btn xs ghost" style="margin-left:auto" data-act="reset">Сбросить игру</button>`;
+  $('#h-controls').innerHTML = ctr + '</div>';
+
+  // участники
+  const pct = D.players.length ? Math.round(D.done/D.players.length*100) : 0;
+  $('#h-people').innerHTML = `<h2>Участники: ${D.players.length}</h2>
+    <div style="font-size:14px">Завершили выбор: <b>${D.done}</b></div><div class="prog"><i style="width:${pct}%"></i></div>
+    <ul class="people">${D.players.map(p=>`<li><span>${esc(p.name)}</span><span class="st ${p.done?'ok':''}">${p.done?'✓ готово':(g.phase==='lobby'?'в игре':'выбирает')}</span>
+      <button class="x" data-act="kick" data-k="${esc(p.key)}" title="Освободить имя (если человек зашёл с другого устройства)">✕</button></li>`).join('') || '<li>Пока никого</li>'}</ul>`;
+
+  // история
+  $('#h-history').innerHTML = `<h2>История решений</h2>${histHTML(D.log, 40)}`;
+
+  const statsOpen = ['reveal','discussion','final'].includes(g.phase);
+  const done = Math.max(D.done,1);
+
+  // текущее предложение
+  if (statsOpen && g.phase !== 'final'){
+    $('#h-current').style.display='';
+    $('#h-current').innerHTML = `<h2>На обсуждении</h2>` + (D.current.length
+      ? `<div class="cur">${D.current.map(id=>`<div class="row"><span>${BY[id].e}</span><span class="nm">${esc(BY[id].t)}</span><span class="cnt">${D.tally[id]||0} ${plural(D.tally[id]||0,'голос','голоса','голосов')}</span>
+            <button class="btn xs lagoon" data-act="keep" data-id="${id}">Оставить</button><button class="btn xs coral" data-act="out" data-id="${id}">Исключить</button></div>`).join('')}</div>
+         <div class="all">${D.current.length>1?`<button class="btn sm coral" data-act="outAll">Исключить все (${D.current.length})</button><button class="btn sm lagoon" data-act="keepAll">Оставить все</button>`:''}
+           <button class="btn sm ghost" data-act="unpropose">Снять с обсуждения</button></div>`
+      : `<p style="margin:0;color:var(--muted)">Выбери карточку в таблице и нажми «Обсудить» — или отметь несколько галочками и предложи пакетом.</p>`);
+  } else $('#h-current').style.display='none';
+
+  // финал
+  if (g.phase === 'final' || (g.phase==='discussion' && D.remaining.length <= CONFIG.FINAL)){
+    $('#h-final').style.display='';
+    $('#h-final-body').innerHTML = `<ol class="finlist">${D.remaining.map(x=>`<li>${x.e} ${esc(x.t)} <button class="btn xs ghost" data-act="out" data-id="${x.id}">Убрать</button></li>`).join('')}</ol>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:0">Вернуть карточку из «За бортом» можно в таблице ниже (фильтр «За бортом»).</p>`;
+  } else $('#h-final').style.display='none';
+
+  // таблица
+  if (!statsOpen){
+    $('#h-table').innerHTML = `<h2>Статистика</h2><p style="margin:0;color:var(--muted)">${g.phase==='choosing'
+      ? 'Статистика откроется, когда ты закроешь личный выбор. Личные списки не хранятся нигде — в базу попадают только общие счётчики.'
+      : 'Статистика появится после этапа личного выбора.'}</p>`;
+    return;
+  }
+  let rows = ITEMS.map(it => ({it, n:D.tally[it.id]||0}));
+  if (HF.filter==='in') rows = rows.filter(r=>!D.out[r.it.id]);
+  if (HF.filter==='out') rows = rows.filter(r=>D.out[r.it.id]);
+  rows.sort((a,b)=> HF.sort==='asc' ? (a.n-b.n || a.it.n-b.it.n) : (b.n-a.n || a.it.n-b.it.n));
+  for (const id of [...SEL]) if (D.out[id] || D.current.includes(id)) SEL.delete(id);
+  const zero = ITEMS.filter(x=>!D.out[x.id] && !(D.tally[x.id]) && !D.current.includes(x.id)).length;
+  $('#h-table').innerHTML = `<h2>Статистика по впечатлениям</h2>
+    <div class="tbar">
+      <div class="seg">${[['in','В списке'],['out','За бортом'],['all','Все 100']].map(([k,l])=>`<button data-act="filter" data-v="${k}" class="${HF.filter===k?'on':''}">${l}</button>`).join('')}</div>
+      <div class="seg">${[['asc','Сначала непопулярные'],['desc','Сначала популярные']].map(([k,l])=>`<button data-act="sort" data-v="${k}" class="${HF.sort===k?'on':''}">${l}</button>`).join('')}</div>
+      ${g.phase==='discussion'?`<button class="btn xs ghost" data-act="selZero" ${zero?'':'disabled'}>Отметить все с 0 голосов (${zero})</button>
+      ${SEL.size?`<button class="btn xs ghost" data-act="selClear">Снять отметки</button><button class="btn sm coral" data-act="proposeSel">Предложить пакетом (${SEL.size})</button>`:''}`:''}
+    </div>
+    <div class="twrap"><table class="st"><thead><tr><th></th><th>№</th><th>Впечатление</th><th>Выбрали</th><th>Статус</th><th></th></tr></thead><tbody>
+    ${rows.map(({it,n})=>{
+      const isOut = !!D.out[it.id], hot = D.current.includes(it.id), kept = !!D.kept[it.id];
+      const badge = isOut ? '<span class="badge out">За бортом</span>' : hot ? '<span class="badge hot">Обсуждаем</span>' : kept ? '<span class="badge keep">⚓ Отстояли</span>' : '<span class="badge in">В списке</span>';
+      const act = isOut ? `<button class="btn xs ghost" data-act="back" data-id="${it.id}">Вернуть</button>`
+        : (g.phase==='discussion' && !hot) ? `<button class="btn xs" data-act="propose" data-id="${it.id}">Обсудить</button>` : '';
+      return `<tr class="${isOut?'out':''} ${hot?'hot':''}">
+        <td>${g.phase==='discussion'?`<input type="checkbox" data-sel="${it.id}" ${SEL.has(it.id)?'checked':''} ${isOut||hot?'disabled':''} aria-label="Отметить">`:''}</td>
+        <td>${it.n}</td><td class="nm"><span class="dot" style="--c:${CAT[it.cat].c}"></span>${it.e} ${esc(it.t)}</td>
+        <td><div class="barc"><div class="b"><i style="width:${Math.round(n/done*100)}%"></i></div><b>${n}</b></div></td>
+        <td>${badge}</td><td>${act}</td></tr>`; }).join('')}
+    </tbody></table></div>`;
+}
+
+const setGame = o => { const u={}; for (const k in o) u['game/'+k]=o[k]; return B.update(u); };
+function decide(ids, a){
+  const D = derive(), u = {}, now = Date.now();
+  ids.forEach((id,i) => {
+    if (a==='out'){ u['out/'+id]=now; u['kept/'+id]=null; }
+    if (a==='keep'){ u['kept/'+id]=now; }
+    if (a==='back'){ u['out/'+id]=null; }
+    u['log/'+B.pushKey()] = {id, a, t: now + i};
+  });
+  const rest = D.current.filter(id => !ids.includes(id));
+  if (a !== 'back') u['game/current'] = rest.length ? rest : null;
+  return B.update(u);
+}
+async function hostClick(e){
+  const b = e.target.closest('[data-act],[data-copy]'); if (!b) return;
+  if (b.dataset.copy){ try { await navigator.clipboard.writeText(b.dataset.copy); toast('Ссылка скопирована'); } catch(_){ toast(b.dataset.copy); } return; }
+  const D = derive(), a = b.dataset.act, id = b.dataset.id;
+  switch(a){
+    case 'reset':
+      if (S.game && S.game.phase && !confirm('Сбросить игру? Участники, статистика и все решения удалятся.')) return;
+      SEL.clear();
+      await B.reset({game:{phase:'lobby', round:rid(), t:Date.now()}}); toast('Новая игра создана'); break;
+    case 'phase': {
+      const p = b.dataset.p;
+      if (p==='choosing') await setGame({phase:'choosing', endsAt: Date.now()+CONFIG.CHOICE_MINUTES*60000});
+      else if (p==='reveal'){ const left = D.players.length - D.done; if (left && !confirm(`${left} ${plural(left,'участник ещё не завершил','участника ещё не завершили','участников ещё не завершили')} выбор. Закрыть всё равно?`)) return; await setGame({phase:'reveal', endsAt:null}); }
+      else if (p==='final'){ if (D.remaining.length > CONFIG.FINAL && !confirm(`В списке ещё ${D.remaining.length}. Открыть финал всё равно?`)) return; await setGame({phase:'final', current:null}); }
+      else await setGame({phase:p});
+      break; }
+    case 'propose': await setGame({current:[id]}); break;
+    case 'proposeSel': await setGame({current:[...SEL]}); SEL.clear(); break;
+    case 'unpropose': await setGame({current:null}); break;
+    case 'out': await decide([id],'out'); break;
+    case 'keep': await decide([id],'keep'); break;
+    case 'back': await decide([id],'back'); break;
+    case 'outAll': await decide(D.current,'out'); break;
+    case 'keepAll': await decide(D.current,'keep'); break;
+    case 'selZero': ITEMS.forEach(x=>{ if(!D.out[x.id] && !D.tally[x.id] && !D.current.includes(x.id)) SEL.add(x.id); }); renderHost(); break;
+    case 'selClear': SEL.clear(); renderHost(); break;
+    case 'filter': HF.filter=b.dataset.v; renderHost(); break;
+    case 'sort': HF.sort=b.dataset.v; renderHost(); break;
+    case 'matches': await setGame({showMatches: !D.g.showMatches}); break;
+    case 'download': downloadList(); break;
+    case 'kick': { const k=b.dataset.k, p=S.players&&S.players[k];
+      if (p && confirm(`Освободить имя «${p.name}»? Если человек уже завершил выбор, его голоса останутся в статистике.`)) await B.set('players/'+k, null); break; }
+  }
+}
+function downloadList(){
+  const D = derive();
+  const lines = ['Наш отпуск мечты' + (D.g.title ? ` — «${D.g.title}»` : ''), '',
+    ...D.remaining.map((x,i)=>`${i+1}. ${x.e} ${x.t}`), '',
+    `За бортом (${D.outList.length}):`, ...[...D.outList].reverse().map(x=>`— ${x.t}`)];
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([lines.join('\n')], {type:'text/plain;charset=utf-8'}));
+  a.download = 'otpusk-mechty.txt'; document.body.appendChild(a); a.click(); a.remove();
+}
+
+/* =====================================================================
+   СТАРТ
+   ===================================================================== */
+const VIEW = ({host:'host', screen:'screen'})[location.hash.replace('#','')] || 'play';
+window.addEventListener('hashchange', () => location.reload());
+function render(){ if (VIEW==='host') renderHost(); else if (VIEW==='screen') renderScreen(); else renderPlay(); }
+B.listen(state => { S = state || {}; detectFlash(); render(); renderRibbon(); });
+render(); renderRibbon();
+</script>
+</body>
+</html>
